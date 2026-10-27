@@ -1,0 +1,54 @@
+services:
+  # 1. PostgreSQL Database Service
+  postgres:
+    image: postgres:15-alpine
+    container_name: postgres_db
+    environment:
+      POSTGRES_USER: ${DATABASE_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-postgres}
+      POSTGRES_DB: ${DATABASE_NAME:-fastapi_db}
+    ports:
+      # Allows accessing PostgreSQL from your host machine (e.g., pgAdmin, DBeaver)
+      - "5432:5432"
+    volumes:
+      # Persists database data on your machine even if container is stopped/deleted
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      # Verifies postgres is ready to accept connections before FastAPI starts
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USERNAME:-postgres} -d ${DATABASE_NAME:-fastapi_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: always
+
+  # 2. FastAPI Application Service
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: fastapi_app
+    ports:
+      # Exposes FastAPI server to http://localhost:8000
+      - "8000:8000"
+    environment:
+      DATABASE_HOSTNAME: postgres
+      DATABASE_PORT: 5432
+      DATABASE_USERNAME: ${DATABASE_USERNAME:-postgres}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD:-postgres}
+      DATABASE_NAME: ${DATABASE_NAME:-fastapi_db}
+      SECRET_KEY: ${SECRET_KEY:-your_super_secret_key_change_in_production}
+      ALGORITHM: ${ALGORITHM:-HS256}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-30}
+    depends_on:
+      # Wait for PostgreSQL to be completely healthy before launching FastAPI
+      postgres:
+        condition: service_healthy
+    volumes:
+      # Mount code directory for live code reloading during development
+      - ./app:/app/app
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    restart: always
+
+# 3. Persistent Volumes
+volumes:
+  postgres_data:

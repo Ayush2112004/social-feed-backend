@@ -7,7 +7,7 @@ from app.database import Base, engine, get_db
 from app.routes import auth, posts, user
 from app.schemas import PostCreate, PostOut
 
-Base.metadata.create_all(bind=engine)
+# Base.metadata.create_all(bind=engine)
 app=FastAPI()
 # class Post(BaseModel):
 #     title:str
@@ -16,7 +16,7 @@ app=FastAPI()
 #     rating:int|None=None
 @app.get("/")
 def home():
-    return {"message":"Social Media App"}
+    return {"message": "Social Media App !! changed"}
 # @app.get("/posts", response_model=list[PostOut])
 # def get_posts(db: Session = Depends(get_db)):
 #     posts = db.query(model.Post).all()
